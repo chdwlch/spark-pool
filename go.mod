@@ -1,4 +1,4 @@
-module github.com/your-username/mining-pool-demo
+module github.com/chdwlch/spark-pool
 
 go 1.24.1
 

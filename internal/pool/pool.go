@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/chdwlch/spark-pool/internal/channel"
 	"github.com/chdwlch/spark-pool/pkg/types"
+	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 )
 
 // Manager handles mining pool operations
@@ -159,7 +159,7 @@ func (pm *Manager) processMinerPayment(ctx context.Context, miner *types.Miner, 
 	}
 
 	// Create payment update
-	paymentUpdate, err := pm.channelManager.CreatePaymentUpdate(
+	_, err := pm.channelManager.CreatePaymentUpdate(
 		channel,
 		amount,
 		"pool_operator",
@@ -258,12 +258,8 @@ func (pm *Manager) CloseMinerChannel(minerID string) error {
 		return fmt.Errorf("channel not found")
 	}
 
-	// Calculate final amounts
-	minerAmount := miner.CurrentBalance
-	poolAmount := channel.TotalFunded - minerAmount
-
 	// Close channel
-	err := pm.channelManager.CloseChannel(channel, minerAmount, poolAmount)
+	err := pm.channelManager.CloseChannel(channel)
 	if err != nil {
 		return fmt.Errorf("failed to close channel: %w", err)
 	}

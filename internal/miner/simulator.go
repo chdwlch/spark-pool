@@ -8,6 +8,8 @@ import (
 	mathrand "math/rand"
 	"sync"
 	"time"
+
+	"github.com/chdwlch/spark-pool/pkg/types"
 )
 
 // Simulator simulates a Bitcoin miner

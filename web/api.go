@@ -5,6 +5,7 @@ import (
 
 	"github.com/chdwlch/spark-pool/internal/miner"
 	"github.com/chdwlch/spark-pool/internal/pool"
+	"github.com/chdwlch/spark-pool/pkg/types"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
