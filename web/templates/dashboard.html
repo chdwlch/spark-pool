@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{.title}}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .mining-animation {
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+      .channel-card {
+        border-left: 4px solid #28a745;
+      }
+      .miner-card {
+        transition: all 0.3s ease;
+      }
+      .miner-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+      .hashrate-display {
+        font-family: "Courier New", monospace;
+        font-size: 1.2em;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container">
+        <a class="navbar-brand" href="#">
+          <i class="fas fa-cube"></i> Ark Virtual Channels Mining Pool
+        </a>
+        <div class="navbar-nav ms-auto">
+          <span class="navbar-text">
+            <i class="fas fa-wifi"></i>
+            <span id="connection-status">Connecting...</span>
+          </span>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container mt-4">
+      <!-- Pool Statistics -->
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="card stats-card">
+            <div class="card-body text-center">
+              <h5><i class="fas fa-users"></i> Total Miners</h5>
+              <h2 id="total-miners">0</h2>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card stats-card">
+            <div class="card-body text-center">
+              <h5><i class="fas fa-tachometer-alt"></i> Hash Rate</h5>
+              <h2 id="total-hashrate">0 TH/s</h2>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card stats-card">
+            <div class="card-body text-center">
+              <h5><i class="fas fa-coins"></i> Total Earned</h5>
+              <h2 id="total-earned">0 sats</h2>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card stats-card">
+            <div class="card-body text-center">
+              <h5><i class="fas fa-link"></i> Active Channels</h5>
+              <h2 id="active-channels">0</h2>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h5><i class="fas fa-plus"></i> Add New Miner</h5>
+            </div>
+            <div class="card-body">
+              <form id="add-miner-form">
+                <div class="mb-3">
+                  <label for="miner-name" class="form-label">Miner Name</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="miner-name"
+                    required
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="miner-address" class="form-label"
+                    >Bitcoin Address</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="miner-address"
+                    required
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="hash-rate" class="form-label"
+                    >Hash Rate (TH/s)</label
+                  >
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="hash-rate"
+                    step="0.1"
+                    required
+                  />
+                </div>
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-plus"></i> Add Miner
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h5><i class="fas fa-cog"></i> Pool Controls</h5>
+            </div>
+            <div class="card-body">
+              <button id="process-block-reward" class="btn btn-success mb-2">
+                <i class="fas fa-coins"></i> Process Block Reward
+              </button>
+              <button id="start-all-miners" class="btn btn-info mb-2">
+                <i class="fas fa-play"></i> Start All Miners
+              </button>
+              <button id="stop-all-miners" class="btn btn-warning mb-2">
+                <i class="fas fa-stop"></i> Stop All Miners
+              </button>
+              <div class="mt-3">
+                <small class="text-muted">
+                  <i class="fas fa-info-circle"></i>
+                  Block rewards are automatically processed every 30 seconds for
+                  demo purposes.
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Miners List -->
+      <div class="row">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5><i class="fas fa-users"></i> Active Miners</h5>
+            </div>
+            <div class="card-body">
+              <div id="miners-list" class="row">
+                <!-- Miners will be populated here -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Virtual Channels -->
+      <div class="row mt-4">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5><i class="fas fa-link"></i> Virtual Channels</h5>
+            </div>
+            <div class="card-body">
+              <div id="channels-list" class="row">
+                <!-- Channels will be populated here -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Block Reward Modal -->
+    <div class="modal fade" id="blockRewardModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Block Reward Distribution</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div id="block-reward-details"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      let ws;
+      let miners = {};
+      let channels = {};
+
+      // Initialize WebSocket connection
+      function initWebSocket() {
+        ws = new WebSocket(`ws://${window.location.host}/ws`);
+
+        ws.onopen = function () {
+          document.getElementById("connection-status").textContent =
+            "Connected";
+          document.getElementById("connection-status").className =
+            "text-success";
+        };
+
+        ws.onclose = function () {
+          document.getElementById("connection-status").textContent =
+            "Disconnected";
+          document.getElementById("connection-status").className =
+            "text-danger";
+          setTimeout(initWebSocket, 5000);
+        };
+
+        ws.onmessage = function (event) {
+          const message = JSON.parse(event.data);
+          handleWebSocketMessage(message);
+        };
+      }
+
+      // Handle WebSocket messages
+      function handleWebSocketMessage(message) {
+        switch (message.type) {
+          case "initial_data":
+            updateDashboard(message.payload);
+            break;
+          case "miner_added":
+            addMinerToUI(message.payload);
+            break;
+          case "miner_started":
+            updateMinerStatus(message.payload.miner_id, true);
+            break;
+          case "miner_stopped":
+            updateMinerStatus(message.payload.miner_id, false);
+            break;
+          case "block_reward":
+            showBlockReward(message.payload);
+            break;
+          case "channel_closed":
+            removeChannelFromUI(message.payload.channel_id);
+            break;
+        }
+      }
+
+      // Update dashboard with initial data
+      function updateDashboard(data) {
+        miners = data.miners || {};
+        channels = data.channels || {};
+
+        updatePoolStats(data.pool_stats);
+        renderMiners();
+        renderChannels();
+      }
+
+      // Update pool statistics
+      function updatePoolStats(stats) {
+        document.getElementById("total-miners").textContent =
+          stats.total_miners;
+        document.getElementById("active-miners").textContent =
+          stats.active_miners;
+        document.getElementById("total-hashrate").textContent =
+          (stats.total_hash_rate / 1e12).toFixed(2) + " TH/s";
+        document.getElementById("total-earned").textContent =
+          stats.total_earned.toLocaleString() + " sats";
+        document.getElementById("active-channels").textContent =
+          stats.active_channels;
+      }
+
+      // Render miners list
+      function renderMiners() {
+        const container = document.getElementById("miners-list");
+        container.innerHTML = "";
+
+        Object.values(miners).forEach((miner) => {
+          const minerCard = createMinerCard(miner);
+          container.appendChild(minerCard);
+        });
+      }
+
+      // Create miner card
+      function createMinerCard(miner) {
+        const col = document.createElement("div");
+        col.className = "col-md-6 col-lg-4 mb-3";
+
+        col.innerHTML = `
+                <div class="card miner-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="fas fa-user"></i> ${miner.name}
+                        </h6>
+                        <span class="badge ${
+                          miner.is_active ? "bg-success" : "bg-secondary"
+                        }">
+                            ${miner.is_active ? "Active" : "Inactive"}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Address:</strong> <small>${
+                          miner.address
+                        }</small></p>
+                        <p><strong>Hash Rate:</strong> ${(
+                          miner.hash_rate / 1e12
+                        ).toFixed(2)} TH/s</p>
+                        <p><strong>Total Earned:</strong> ${miner.total_earned.toLocaleString()} sats</p>
+                        <p><strong>Current Balance:</strong> ${miner.current_balance.toLocaleString()} sats</p>
+                        <div class="btn-group w-100">
+                            <button class="btn btn-sm btn-success" onclick="startMiner('${
+                              miner.id
+                            }')">
+                                <i class="fas fa-play"></i> Start
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="stopMiner('${
+                              miner.id
+                            }')">
+                                <i class="fas fa-stop"></i> Stop
+                            </button>
+                            <a href="/miner/${
+                              miner.id
+                            }" class="btn btn-sm btn-info">
+                                <i class="fas fa-chart-line"></i> Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+        return col;
+      }
+
+      // Render channels list
+      function renderChannels() {
+        const container = document.getElementById("channels-list");
+        container.innerHTML = "";
+
+        Object.values(channels).forEach((channel) => {
+          const channelCard = createChannelCard(channel);
+          container.appendChild(channelCard);
+        });
+      }
+
+      // Create channel card
+      function createChannelCard(channel) {
+        const col = document.createElement("div");
+        col.className = "col-md-6 col-lg-4 mb-3";
+
+        col.innerHTML = `
+                <div class="card channel-card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-link"></i> Channel ${channel.id.substring(
+                              0,
+                              8
+                            )}...
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Miner:</strong> ${
+                          miners[channel.miner_id]?.name || "Unknown"
+                        }</p>
+                        <p><strong>Total Funded:</strong> ${channel.total_funded.toLocaleString()} sats</p>
+                        <p><strong>Current Balance:</strong> ${channel.current_balance.toLocaleString()} sats</p>
+                        <p><strong>Status:</strong> <span class="badge bg-success">${
+                          channel.status
+                        }</span></p>
+                        <button class="btn btn-sm btn-danger" onclick="closeChannel('${
+                          channel.id
+                        }')">
+                            <i class="fas fa-times"></i> Close Channel
+                        </button>
+                    </div>
+                </div>
+            `;
+
+        return col;
+      }
+
+      // Add miner to UI
+      function addMinerToUI(miner) {
+        miners[miner.id] = miner;
+        renderMiners();
+        updatePoolStats({
+          total_miners: Object.keys(miners).length,
+          active_miners: Object.values(miners).filter((m) => m.is_active)
+            .length,
+          total_hash_rate: Object.values(miners).reduce(
+            (sum, m) => sum + m.hash_rate,
+            0
+          ),
+          total_earned: Object.values(miners).reduce(
+            (sum, m) => sum + m.total_earned,
+            0
+          ),
+          active_channels: Object.keys(channels).length,
+        });
+      }
+
+      // Update miner status
+      function updateMinerStatus(minerId, isActive) {
+        if (miners[minerId]) {
+          miners[minerId].is_active = isActive;
+          renderMiners();
+        }
+      }
+
+      // Remove channel from UI
+      function removeChannelFromUI(channelId) {
+        delete channels[channelId];
+        renderChannels();
+      }
+
+      // Show block reward modal
+      function showBlockReward(blockReward) {
+        const modal = new bootstrap.Modal(
+          document.getElementById("blockRewardModal")
+        );
+        const details = document.getElementById("block-reward-details");
+
+        let html = `
+                <h6>Block ${blockReward.block_height} Reward Distribution</h6>
+                <p><strong>Total Reward:</strong> ${blockReward.total_reward.toLocaleString()} sats</p>
+                <hr>
+                <h6>Miner Distributions:</h6>
+                <ul>
+            `;
+
+        Object.entries(blockReward.distributions).forEach(
+          ([minerId, amount]) => {
+            const minerName = miners[minerId]?.name || minerId;
+            html += `<li>${minerName}: ${amount.toLocaleString()} sats</li>`;
+          }
+        );
+
+        html += "</ul>";
+        details.innerHTML = html;
+        modal.show();
+      }
+
+      // API functions
+      async function addMiner(name, address, hashRate) {
+        const response = await fetch("/api/v1/miners", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            miner_name: name,
+            address,
+            hash_rate: hashRate,
+          }),
+        });
+        return response.json();
+      }
+
+      async function startMiner(minerId) {
+        await fetch(`/api/v1/miners/${minerId}/start`, { method: "PUT" });
+      }
+
+      async function stopMiner(minerId) {
+        await fetch(`/api/v1/miners/${minerId}/stop`, { method: "PUT" });
+      }
+
+      async function processBlockReward() {
+        const response = await fetch("/api/v1/pool/block-reward", {
+          method: "POST",
+        });
+        return response.json();
+      }
+
+      async function closeChannel(channelId) {
+        await fetch(`/api/v1/channels/${channelId}/close`, { method: "POST" });
+      }
+
+      // Event listeners
+      document
+        .getElementById("add-miner-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const name = document.getElementById("miner-name").value;
+          const address = document.getElementById("miner-address").value;
+          const hashRate = parseFloat(
+            document.getElementById("hash-rate").value
+          );
+
+          try {
+            await addMiner(name, address, hashRate * 1e12); // Convert TH/s to H/s
+            e.target.reset();
+          } catch (error) {
+            console.error("Failed to add miner:", error);
+            alert("Failed to add miner");
+          }
+        });
+
+      document
+        .getElementById("process-block-reward")
+        .addEventListener("click", async () => {
+          try {
+            await processBlockReward();
+          } catch (error) {
+            console.error("Failed to process block reward:", error);
+            alert("Failed to process block reward");
+          }
+        });
+
+      document
+        .getElementById("start-all-miners")
+        .addEventListener("click", async () => {
+          Object.keys(miners).forEach(async (minerId) => {
+            try {
+              await startMiner(minerId);
+            } catch (error) {
+              console.error(`Failed to start miner ${minerId}:`, error);
+            }
+          });
+        });
+
+      document
+        .getElementById("stop-all-miners")
+        .addEventListener("click", async () => {
+          Object.keys(miners).forEach(async (minerId) => {
+            try {
+              await stopMiner(minerId);
+            } catch (error) {
+              console.error(`Failed to stop miner ${minerId}:`, error);
+            }
+          });
+        });
+
+      // Initialize
+      initWebSocket();
+    </script>
+  </body>
+</html>
